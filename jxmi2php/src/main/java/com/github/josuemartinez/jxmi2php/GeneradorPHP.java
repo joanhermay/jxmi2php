@@ -31,10 +31,10 @@ public final class GeneradorPHP {
             "El archivo no posee la información necesaria para ser reconocido como un archivo" +
             "exportado por StarUML.";
 
-    private static final String ERROR_IO = "ERROR CRITICO EN CONVERSOR PHP: " +
+    private static final String ERROR_IO = "ERROR CRÍTICO EN CONVERSOR PHP: " +
             "No se puede acceder al archivo o no existe.";
 
-    private static final String ERROR_ANALISIS = "ERROR CRITICO EN CONVERSOR PHP: " +
+    private static final String ERROR_ANALISIS = "ERROR CRÍTICO EN CONVERSOR PHP: " +
             "Conversión cancelada. Se encontraron inconsistencias en la estructura del archivo.";
 
     /**
@@ -92,6 +92,7 @@ public final class GeneradorPHP {
                 List<Asociacion> asociaciones = obtenerAsociaciones(nodosDelTagOwnedMember);
                 modificarClasesAfectadasPorAsociaciones(asociaciones, clases);
 
+                clasesFinales.put("Main", generarMain(clases));
                 for (Clase clase : clases) {
                     clasesFinales.put(clase.getNombre(), clase.generarCodigo());
                 }
@@ -110,6 +111,108 @@ public final class GeneradorPHP {
             }
         }
         return clasesFinales;
+    }
+
+    private String generarMain(List<Clase> clases) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<?php").append('\n');
+        sb.append('{').append('\n');
+        sb.append("    ").append(salidaPHP("Main.php - SCRIPT PARA PROBAR LAS CLASES GENERADAS<br><br>", true)).append('\n');
+        sb.append("    ").append(salidaPHP("Todos los valores a ser asignados a los atributos de las clases seran un string.<br>", true)).append('\n');
+        sb.append("    ").append(salidaPHP("Solo usted, el usuario, sabe los verdaderos valores con los que trabajaran estos atributos.<br>", true)).append('\n');
+        sb.append("    ").append(salidaPHP("Se recalca que estos valores son solo para probar la funcionalidad basica de las clases.<br>", true)).append('\n');
+        sb.append("    ").append(salidaPHP("=============================================================<br>", true)).append('\n');
+        sb.append("    ").append(salidaPHP("<br>", true)).append("\n\n");
+
+        // Agregar requires
+        sb.append("    ").append("// REQUIRES\n");
+        for (Clase c : clases) {
+            sb.append("    ").append("require_once '").append(c.getNombre()).append(".php';").append('\n');
+        }
+        sb.append("\n\n");
+
+        sb.append("    ").append("// INSTANCIACIONES\n");
+        for (Clase c : clases) {
+            if (!c.esInterfaz() && !c.esAbstracta()) {
+                sb.append("    ").append(salidaPHP("INSTANCIANDO CLASE: " + c.getNombre() + "<br>", true)).append('\n');
+                sb.append("    ").append('$').append(c.getNombre().toLowerCase()).append(" = ")
+                        .append("new ").append(c.getNombre()).append("();\n");
+            } else {
+                sb.append("    ").append(salidaPHP("LA CLASE: " + c.getNombre() + ", no puede ser instanciada.<br>", true)).append('\n');
+                sb.append("    ").append(salidaPHP("Es una interfaz o es una clase abstracta.<br>", true)).append("\n\n");
+
+            }
+        }
+        sb.append("    ").append(salidaPHP("<br>", true)).append('\n');
+        sb.append("    ").append(salidaPHP("=============================================================<br>", true)).append('\n');
+        sb.append('\n');
+        sb.append('\n');
+
+        sb.append("    ").append("// PRUEBA SETS ATRIBUTOS NORMALES\n");
+        for (Clase c : clases) {
+            if (!c.esAbstracta() && !c.esInterfaz()) {
+                int contador = 0;
+                sb.append("    ").append(salidaPHP("PRUEBA DE METODOS SET PARA LOS ATRIBUTOS DE LA CLASE: " + c.getNombre() + "<br>", true)).append('\n');
+                for (Atributo a : c.getAtributos()) {
+                    if (!a.EsReferenciaAUnaClase()) {
+                        sb.append("    ").append(salidaPHP("Usando metodo set para agregar el valor de prueba al atributo: " + a.getNombre().toLowerCase() + "<br>", true)).append('\n');
+                        sb.append("    ").append('$');
+                        sb.append(c.getNombre().toLowerCase()).append("->");
+                        sb.append("set").append(hacerPalabraPrimeraLetraMayuscula(a.getNombre()));
+                        sb.append('(').append("\"dato").append(++contador).append("\")").append(';');
+                        sb.append('\n');
+                        sb.append("    ").append(salidaPHP("Valor de prueba usado: dato" + contador, true)).append('\n');
+                    } else {
+                        sb.append("    ").append(salidaPHP("Usando metodo set para agregar un objeto al atributo: " + a.getNombre().toLowerCase() + "<br>", true)).append('\n');
+                        sb.append("    ").append('$');
+                        sb.append(c.getNombre().toLowerCase()).append("->");
+                        sb.append("set").append(hacerPalabraPrimeraLetraMayuscula(a.getNombre()));
+                        sb.append("($").append(a.getNombre().toLowerCase()).append(");").append('\n');
+                        sb.append("    ").append(salidaPHP("Valor usado: El objeto " + a.getNombre() + " previamente creado", true)).append('\n');
+                    }
+                    sb.append("    ").append(salidaPHP("<br>", true)).append('\n');
+                }
+                sb.append("    ").append(salidaPHP("<br>", true)).append('\n');
+            }
+            sb.append("    ").append(salidaPHP("<br>", true)).append('\n');
+            sb.append('\n');
+            sb.append('\n');
+        }
+
+        sb.append("    ").append(salidaPHP("=============================================================<br>", true)).append('\n');
+        sb.append("    ").append("//PRUEBAS GET\n");
+        for (Clase c : clases) {
+            if(!c.esInterfaz() && !c.esAbstracta()) {
+                sb.append("    ").append(salidaPHP("PRUEBAS DE METODOS GET DE LA CLASE: " + c.getNombre() + "<br>", true)).append('\n');
+                for (Atributo a : c.getAtributos()) {
+                    sb.append("    ").append(salidaPHP("Usando metodo get para obtener el atributo: " + a.getNombre().toLowerCase() + "<br>", true)).append('\n');
+                    sb.append("    ").append(salidaPHP("Resultado: ", true)).append('\n');
+                    sb.append("    ").append(salidaPHP(
+                            "$" + c.getNombre().toLowerCase(Locale.ROOT) + "->" + "get" +
+                                    hacerPalabraPrimeraLetraMayuscula(a.getNombre()) + "()",
+                            false)
+                    ).append('\n');
+                    sb.append("    ").append(salidaPHP("<br>", true)).append('\n');
+                }
+                sb.append("    ").append(salidaPHP("<br>", true)).append('\n');
+            }
+        }
+        sb.append('}').append('\n');
+        sb.append("?>").append('\n');
+        return sb.toString();
+    }
+
+    private String hacerPalabraPrimeraLetraMayuscula(String texto) {
+        return texto.substring(0, 1).toUpperCase().concat(texto.substring(1));
+    }
+
+    private String salidaPHP(String comentario, boolean conComillas) {
+        if (conComillas) {
+            return "echo \"" + comentario + "\";";
+        } else {
+            return "echo " + comentario + ";";
+        }
+
     }
 
     /**
@@ -194,9 +297,12 @@ public final class GeneradorPHP {
                         && !elementoPackageElement.getAttribute("xmi:type").equals("uml:DataType")) {
                     Clase clase = new Clase();
                     clase.setId(elementoPackageElement.getAttribute("xmi:id"));
-                    clase.setAbstracta(elementoPackageElement.getAttribute("isAbstract").equals("true"));
-                    clase.setInterfaz(elementoPackageElement.getAttribute("xmi:type")
-                            .equalsIgnoreCase("uml:Interface"));
+                    if (elementoPackageElement.getAttribute("isAbstract").equals("true")) {
+                        clase.setAbstracta(true);
+                    } else if (elementoPackageElement.getAttribute("xmi:type")
+                            .equalsIgnoreCase("uml:Interface")) {
+                        clase.setInterfaz(true);
+                    }
                     clase.setNombre(elementoPackageElement.getAttribute("name"));
                     clase.setAtributos(obtenerAtributosDeClase(elementoPackageElement
                             .getElementsByTagName("ownedAttribute")));

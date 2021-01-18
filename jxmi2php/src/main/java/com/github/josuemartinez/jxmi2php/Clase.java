@@ -13,7 +13,6 @@ class Clase {
     private boolean interfaz;
     private List<Metodo> metodos;
     private List<Atributo> atributos;
-    private boolean poseeConstructor;
 
     public Clase() {
         this.id = "";
@@ -75,14 +74,6 @@ class Clase {
         this.atributos = atributos;
     }
 
-    public boolean seEncontroConstructor() {
-        return poseeConstructor;
-    }
-
-    public void setPoseeConstructor(boolean poseeConstructor) {
-        this.poseeConstructor = poseeConstructor;
-    }
-
     // Métodos utilitarios
     private void generarAtributos(StringBuilder sb) {
         if (!getAtributos().isEmpty()) {
@@ -136,7 +127,6 @@ class Clase {
                 if (!m.getNombre().isEmpty()) {
                     if (getNombre().equals(m.getNombre())) {
                         if (!esAbstracta() && !esInterfaz()) {
-                            setPoseeConstructor(true);
                             sb.append("\n\n");
                             generarConstructor(sb, m);
                         }
@@ -161,13 +151,18 @@ class Clase {
                         } else {
                             sb.append("()");
                         }
-                        sb.append('\n');
-                        sb.append("    ");
-                        sb.append('{').append('\n')
-                                .append("        ")
-                                .append("// Inserte su código aquí...").append('\n')
-                                .append("    ")
-                                .append('}');
+
+                        if (!m.esAbstracto()) {
+                            sb.append('\n');
+                            sb.append("    ");
+                            sb.append('{').append('\n')
+                                    .append("        ")
+                                    .append("// Inserte su código aquí...").append('\n')
+                                    .append("    ")
+                                    .append('}');
+                        } else {
+                            sb.append(';');
+                        }
                         sb.append("\n\n");
                     }
                 }
@@ -202,61 +197,25 @@ class Clase {
         sb.append("    ").append('}');
     }
 
-    private void generarConstructorSiNoSeEncuentraDefinido(StringBuilder sb) {
-        if (!seEncontroConstructor()) {
-            if (!getAtributos().isEmpty()) {
-                sb.append("    // CONSTRUCTOR GENERADO AUTOMATICAMENTE\n");
-                sb.append("    ").append("public function __construct");
-                sb.append('(');
-                for (Atributo a : getAtributos()) {
-                    if (!a.getNombre().isEmpty()) {
-                        sb.append('$').append(a.getNombre().toLowerCase()).append(", ");
-                    }
-                }
-                sb.replace(sb.length() - 2, sb.length(), ")");
-                sb.append('\n');
-                sb.append("    ").append('{').append('\n');
-                for (Atributo a : getAtributos()) {
-                    if (!a.getNombre().isEmpty()) {
-                        if (a.EsReferenciaAUnaClase()) {
-                            sb.append("        ")
-                                    .append("$this->").append(a.getNombre().toLowerCase()).append(" = ")
-                                    .append("new $").append(a.getNombre())
-                                    .append("();").append('\n');
-                        } else {
-                            sb.append("        ");
-                            sb.append("$this->").append(a.getNombre().toLowerCase()).append(" = ")
-                                    .append('$').append(a.getNombre().toLowerCase()).append(';').append('\n');
-                        }
-                    }
-                }
-                sb.append("    ").append('}');
-            }
-        }
-        sb.append('\n');
-    }
-
     private String hacerPalabraPrimeraLetraMayuscula(String texto) {
         return texto.substring(0, 1).toUpperCase().concat(texto.substring(1));
+    }
+
+    private void agregarToString(StringBuilder sb) {
+
+        sb.append("    // Este método existe solo para fines de prueba. Puede eliminarlo si lo desea.\n")
+                .append("    ")
+                .append("public function __toString()\n").append("    ").append("{\n        ")
+                .append("// El retorno que se muestra a continuación es para fines de pruebas\n" +
+                        "        // Como usuario, puede cambiar esta función como desee.\n\n")
+                .append("        return \"Soy un objeto ").append(getNombre()).append(".\";")
+                .append("\n    }\n");
     }
 
     public final String generarCodigo() {
         StringBuilder sb = new StringBuilder();
         sb.append("<?php").append('\n');
-        if (!getAtributos().isEmpty()) {
-            // Los 'require' que necesita la clase, si hay atributos marcados
-            for (Atributo a : getAtributos()) {
-                if (!a.getNombre().isEmpty()) {
-                    if (a.EsReferenciaAUnaClase()) {
-                        sb.append("require ")
-                                .append("'")
-                                .append(hacerPalabraPrimeraLetraMayuscula(a.getNombre())).append(".php")
-                                .append("';")
-                                .append('\n');
-                    }
-                }
-            }
-        }
+        genenerarRequires(sb);
         sb.append('\n');
 
         // Información básica de la clase
@@ -266,11 +225,11 @@ class Clase {
             generarAtributos(sb);
             generarSetsGets(sb);
             generarMetodos(sb);
+            agregarToString(sb);
         } else {
             if (esInterfaz()) {
                 sb.append("interface ");
                 sb.append(getNombre()).append("\n{\n\n");
-                generarMetodos(sb);
             } else {
                 sb.append("class ");
                 sb.append(getNombre()).append("\n{\n\n");
@@ -278,13 +237,28 @@ class Clase {
                 sb.append('\n');
                 generarSetsGets(sb);
                 generarMetodos(sb);
-
-                // Crear constructor si no se encontró uno definido
-                generarConstructorSiNoSeEncuentraDefinido(sb);
+                agregarToString(sb);
             }
         }
         sb.append("}\n");
         sb.append("?>");
         return sb.toString();
+    }
+
+    private void genenerarRequires(StringBuilder sb) {
+        if (!getAtributos().isEmpty()) {
+            // Los 'require' que necesita la clase, si hay atributos marcados
+            for (Atributo a : getAtributos()) {
+                if (!a.getNombre().isEmpty()) {
+                    if (a.EsReferenciaAUnaClase()) {
+                        sb.append("require_once ")
+                                .append("'")
+                                .append(hacerPalabraPrimeraLetraMayuscula(a.getNombre())).append(".php")
+                                .append("';")
+                                .append('\n');
+                    }
+                }
+            }
+        }
     }
 }
