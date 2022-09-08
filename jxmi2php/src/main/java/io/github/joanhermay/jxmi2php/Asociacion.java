@@ -1,4 +1,4 @@
-package com.github.josuemartinez.jxmi2php;
+package io.github.joanhermay.jxmi2php;
 
 /**
  * @author Josué Andrés Hernández Martínez

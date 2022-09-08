@@ -1,4 +1,4 @@
-package com.github.josuemartinez.jxmi2php;
+package io.github.joanhermay.jxmi2php;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;

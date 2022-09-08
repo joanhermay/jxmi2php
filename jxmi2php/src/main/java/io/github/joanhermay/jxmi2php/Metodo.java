@@ -1,4 +1,4 @@
-package com.github.josuemartinez.jxmi2php;
+package io.github.joanhermay.jxmi2php;
 
 import java.util.ArrayList;
 import java.util.List;
